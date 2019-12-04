@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ConnectTacToe - Game Info</title>
+	<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	<script src="scripts/utility.js"></script>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body class="bg-light">
+	<nav class="navbar navbar-dark bg-dark">
+	  <a class="navbar-brand" href="index.html">Connect Tac Toe</a>
+	</nav>
+
+	<template id="loading">
+		<span class="spinner-border spinner-border-sm loadingicon" role="status" aria-hidden="true"></span>
+	</template>
+	<div class="container" id="cont">
+		<p id="error" class="d-none text-danger"></p>
+		<div class="row w-100 m-0 mt-2">
+			<div class="col-4">
+				<div class="row mb-2">
+					<a href="javascript:void(0);" id="play" class="btn btn-primary col" onclick="alert('Select a player first!');">Play Game</a>
+				</div>
+				<div class="row mb-2">
+					<a class="btn btn-success col mr-1" data-toggle="collapse" href="#registerCollapse" role="button" aria-expanded="false" aria-controls="registerCollapse">Join Game</a>
+					<a class="btn btn-warning col ml-1" data-toggle="collapse" href="#unregisterCollapse" role="button" aria-expanded="false" aria-controls="unregisterCollapse">Leave Game</a>
+				</div>
+				<div class="row mb-2">
+					<button type="button" class="btn btn-danger col" data-toggle="modal" data-target="#deleteGameConfirmModal">
+					  Delete
+					</button>
+				</div>
+			</div>
+			<div class="col-8">
+				<div class="row">
+					<div class="col-6">
+						<h3>Gameserver Information</h3>
+						<p id="gameiddisplay">Game ID</p>
+						<p id="gamereadydisplay" class="load">Loading status...</p>
+					</div>
+					<div class="col-5">
+						<h3>Players:</h3>
+						<div class="row">
+							<div class="col-2"><input type="radio" name="playerselect" id="playerxradio" value="X" disabled></div>
+							<div class="col-2">X:</div>
+							<div class="col-8" id="playerx"></div>
+						</div>
+						<div class="row">
+							<div class="col-2"><input type="radio" name="playerselect" id="playeroradio" value="O" disabled></div>
+							<div class="col-2">O:</div>
+							<div class="col-8" id="playero"></div>
+						</div>
+					</div>
+					<div class="col-1 load load-large p-2"></div>
+				</div>
+			</div>
+		</div>
+
+		<div id="registerCollapse" class="collapse">
+			<div class="card card-body">
+				<h4>Join Game</h4>
+				<label>Enter a Unique User ID</label>
+				<input type="text" name="id" id="id" />
+				<br>
+				<label>Select Player</label>
+				<select id="player">
+					<option value="X" id="xselect">X</option>
+					<option value="O" id="oselect">O</option>
+				</select>
+				<br>
+				<a href="javascript:void(0);" onClick="registerPlayer();" class="btn btn-success">Join</a>
+
+				<p class="d-none" id="registerResult"></p>
+			</div>
+		</div>
+
+		<div id="unregisterCollapse" class="collapse">
+			<div class="card card-body">
+				<h4>Leave Game</h4>
+				<label>Select Player</label>
+				<select id="unregplayer">
+					<option value="X">X</option>
+					<option value="O">O</option>
+				</select>
+				<br>
+				<a href="javascript:void(0);" onClick="unregisterPlayer();" class="btn btn-warning">Leave</a>
+
+				<p class="d-none" id="unregisterResult"></p>
+			</div>
+		</div>
+
+		<!-- Modal -->
+		<div class="modal fade" id="deleteGameConfirmModal" tabindex="-1" role="dialog" aria-labelledby="deleteGameConfirmModalLabel" aria-hidden="true">
+		  <div class="modal-dialog" role="document">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="exampleModalLabel">Delete Game</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <div class="modal-body">
+		        <p>Are you sure you want to delete this game?</p>
+		        <p class="d-none" id="deleteResponse"></p>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-secondary" data-dismiss="modal" id="cancelDeleteButton">Cancel</button>
+		        <button type="button" class="btn btn-danger" onclick="confirmDelete();" id="deleteButton">Delete</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+
+		<script>
+			var web = new WebRequestor(true, 1000);
+			var gameid;
+			var interval;
+			var player;
+
+			$(function() {
+				$("input[type='radio']").click(function(){
+		            var radioValue = $("input[name='playerselect']:checked").val();
+		            if(radioValue){
+		                player = radioValue;
+		                $('#play').prop("href", "play.html?id=" + gameid + "&player=" + player);
+		                $('#play').attr("onclick", null);
+		            }
+		        });
+
+				gameid = getUrlParameter('id');
+				document.title = "ConnectTacToe - Game Info (" + gameid + ")";
+
+				$('#gameiddisplay').html("Game ID: " + gameid);
+
+				var radioValue = $("input[name='playerselect']:checked").val()
+
+				
+
+				showLoading();
+				web.webRequest(gameid + '/info', processData, processError);
+			});
+
+			function processData(data) {
+            	console.log(data + data.length);
+            	var obj = JSON.parse(data);
+
+            	var ready = obj.ready;
+            	var players = JSON.parse(obj.players);
+            	var x = players.X;
+            	var o = players.O;
+
+            	var hasX = false;
+            	$('#playerx').html("");
+            	$('#playerxradio').val("");
+            	var hasO = false;
+            	$('#playero').html("");
+				$('#playeroradio').val("");
+
+            	if (x) {
+            		$('#playerx').html(x);
+            		$('#playerxradio').val(x);
+            		hasX = true;
+            	}
+            	if (o) {
+            		$('#playero').html(o);
+            		$('#playeroradio').val(o);
+            		hasO = true;
+            	}
+
+            	$('#xselect').prop("disabled", hasX);
+            	$('#oselect').prop("disabled", hasO);
+
+            	$('#playerxradio').prop("disabled", !hasX);
+            	$('#playeroradio').prop("disabled", !hasO);
+
+            	var status = "Not Ready";
+            	if (ready) status = "Ready";
+            	$('#gamereadydisplay').html("Game Status: " + status);
+
+            	hideLoading();
+			}
+
+			function processError(err) {
+				error(err);
+			}
+
+			function showLoading() {
+				var tempLoading = document.getElementById("loading");
+				
+				$('.load').toArray().forEach(function(e) {
+					var elem = $(e);
+					var clon = tempLoading.content.cloneNode(true);
+					if (elem.hasClass('load-large')) 
+						$(clon).children().toArray().forEach(function(e1) {
+							$(e1).removeClass("spinner-border-sm");
+						});
+					if (elem.hasClass('load-prepend')) {
+						elem.prepend(clon);
+					} else {
+						elem.append(clon);
+					}
+				});
+			}
+			function hideLoading() {
+				$('.loadingicon').toArray().forEach(function(e) {
+					$(e).remove();
+				});
+			}
+
+			function registerPlayer() {
+				var uid = $('#id').val();
+				var player = $('#player').val();
+
+				webNoRepeat.webRequest('register?player=' + player + '&id=' + uid, (data) => {
+	            	var response = $('#registerResponse');
+	            	response.removeClass("d-none");
+	            	response.html(data);
+				}, (err) => {
+					error(err);
+				});
+			}
+
+			function unregisterPlayer() {
+				var player = $('#unregplayer').val();
+				var webNoRepeat = new WebRequestor(false);
+				webNoRepeat.webRequest(gameid + '/unregister?player=' + player, (data) => {
+	            	var $response = $('#unregisterResponse');
+	            	$response.removeClass("d-none");
+	            	$response.html(data);
+				}, (err) => {
+					error(err);
+				});
+			}
+
+			function confirmDelete() {
+				var webNoRepeat = new WebRequestor(false);
+				webNoRepeat.webRequest(gameid + '/delete', (data) => {
+					web = null;
+	            	$('#deleteResponse').html(data);
+	            	$('#deleteResponse').removeClass("d-none");
+	            	$('#deleteButton').remove();
+	            	$('#cancelDeleteButton').html("Close");
+	            	$('.btn').toArray().forEach(function(e) {
+	            		$(e).prop("disabled", true);
+	            	});
+				});
+			}
+		</script>
+	</div>
+</body>

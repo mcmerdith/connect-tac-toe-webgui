@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ConnectTacToe - Available Games</title>
+	<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	<script src="scripts/utility.js"></script>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body class="bg-light">
+	<nav class="navbar navbar-dark bg-dark">
+	  <a class="navbar-brand" href="index.html">Connect Tac Toe</a>
+	</nav>
+	<div class="container">
+		<h2>Active Connect Tac Toe Games</h2>
+		<p>Server: <span id="server">Loading</span> (<span id="connectionStatus" class="text-danger">Disconnected</span>)</p>
+		<p id="loading">Loading games... <span class="spinner-border spinner-border-sm loadingicon" role="status" aria-hidden="true"></span></p>
+		<p class="text-danger d-none" id="error"></p>
+		<div id="games" class="d-none mb-2"></div>
+		<hr>
+		<button class="btn btn-primary" onclick="newGame()">New Game</a>
+
+		<script>
+			var web = new WebRequestor(true, 1000);
+			var $status;
+
+			$(function() {
+				web.webRequest("querygames", processData, processError);
+				$status = $('#connectionStatus');
+			});
+
+			function processData(data) {
+				$('#server').html(web.connection.url);
+				$status.html("Connected");
+				$status.removeClass();
+				$status.addClass("text-success");
+
+				clearError();
+            	clearElem($('#games'));
+
+                if (data.length > 2) {
+                	var x = data.substring(1, data.length - 1);
+                	var ids = x.split(',');
+
+                	ids.forEach( function(id) {
+                		var link = $('<a>', {
+							href: 'gameinfo.html?id=' + id,
+							html: id
+						});
+						var br = $('<br>',{});
+                		$('#games').append(link);
+                		$('#games').append(br);
+                	});
+
+                	$('#games').removeClass('d-none');
+                	$('#loading').hide();
+                } else {
+                	// No data
+                	$('#loading').show();
+                	$('#loading').html("No games available");
+                }
+			}
+
+			function processError(err) {
+				error(err);
+				clearElem($('#games'));
+				$('#server').html("None");
+
+				$status.html("Disconnected");
+				$status.removeClass();
+				$status.addClass("text-danger");
+			}
+
+			function newGame() {
+				var id = Math.random().toString(36).substring(2, 10);
+
+				var newGameWeb = new WebRequestor(false); // Create a new nonrepeating webrequestor
+				newGameWeb.webRequest("create/" + id, () => {8}, (error) => {
+					alert("Failed to create game\n" + error);
+				});
+			}
+		</script>
+	</div>
+</body>
