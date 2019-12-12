@@ -24,14 +24,15 @@
 		<div class="row w-100 m-0 mt-2">
 			<div class="col-4">
 				<div class="row mb-2">
-					<a href="javascript:void(0);" id="play-button" class="btn btn-primary col" onclick="alert('Select a player first!');">Play Game</a>
+					<a class="btn btn-primary col mr-1" href="javascript:void(0);" id="play-button-online" onclick="alert('Select a player first!');">Play (Online)</a>
+					<a class="btn btn-primary col ml-1" href="javascript:void(0);" id="play-button-local" onclick="alert('Please wait');">Play (Local)</a>
 				</div>
 				<div class="row mb-2">
-					<a class="btn btn-success col mr-1" data-toggle="collapse" href="#register-collapse" role="button" aria-expanded="false" aria-controls="registerCollapse">Join Game</a>
-					<a class="btn btn-warning col ml-1" data-toggle="collapse" href="#unregister-collapse" role="button" aria-expanded="false" aria-controls="unregisterCollapse">Leave Game</a>
+					<a class="btn btn-success col mr-1" data-toggle="collapse" href="#register-collapse" role="button" aria-expanded="false" aria-controls="register-collapse">Join Game</a>
+					<a class="btn btn-warning col ml-1" data-toggle="collapse" href="#unregister-collapse" role="button" aria-expanded="false" aria-controls="unregister-collapse">Leave Game</a>
 				</div>
 				<div class="row mb-2">
-					<button type="button" class="btn btn-danger col" data-toggle="modal" data-target="#deleteGameConfirmModal">
+					<button type="button" class="btn btn-danger col" data-toggle="modal" data-target="#delete-game-confirm-modal">
 						Delete
 					</button>
 				</div>
@@ -43,20 +44,22 @@
 						<p>Game ID: <span id="gameid-display"></span></p>
 						<p class="load">Status: <span id="game-ready-display">Loading...</span></p>
 					</div>
-					<div class="col-5">
+					<div class="col-6">
 						<h3>Players:</h3>
 						<div class="row">
 							<div class="col-2"><input type="radio" name="player-select" val="X" class="x" disabled></div>
-							<div class="col-2">X:</div>
-							<div class="col-8" id="playerx-display"></div>
+							<div class="col">
+								<p><strong>X: </strong><span id="playerx-display"></span></p>
+							</div>
 						</div>
 						<div class="row">
 							<div class="col-2"><input type="radio" name="player-select" val="O" class="o" disabled></div>
-							<div class="col-2">O:</div>
-							<div class="col-8" id="playero-display"></div>
+							<div class="col">
+								<strong>O: </strong>
+								<span id="playero-display"></span>
+							</div>
 						</div>
 					</div>
-					<div class="col-1 load load-large p-2"></div>
 				</div>
 			</div>
 		</div>
@@ -68,6 +71,7 @@
 				<br>
 				<label>Select Player</label>
 				<select>
+					<option value="select" name="reg-player-select">Select</option>
 					<option value="X" class="x" name="reg-player-select">X</option>
 					<option value="O" class="o" name="reg-player-select">O</option>
 				</select>
@@ -83,6 +87,7 @@
 				<h4>Leave Game</h4>
 				<label>Select Player</label>
 				<select>
+					<option value="select" name="unreg-player-select">Select</option>
 					<option value="X" name="unreg-player-select">X</option>
 					<option value="O" name="unreg-player-select">O</option>
 				</select>

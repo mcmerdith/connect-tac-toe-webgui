@@ -29,6 +29,32 @@ var clearError = function() {
   clearElem($error);
 }
 
+var showLoading = function () {
+  let loadingTemplate = document.getElementById('loading-template');
+
+  $('.load').toArray().forEach(function(e) {
+    let elem = $(e);
+    let clon = loadingTemplate.content.cloneNode(true);
+
+    if (elem.hasClass('load-large'))
+      $(clon).children().toArray().forEach(function(e1) {
+        $(e1).removeClass('spinner-border-sm');
+      });
+
+    if (elem.hasClass('load-prepend')) {
+      elem.prepend(clon);
+    } else {
+      elem.append(clon);
+    }
+  });
+}
+
+var hideLoading = function () {
+  $('.loading-icon').toArray().forEach(function(e) {
+    $(e).remove();
+  });
+}
+
 function WebRequestor(repeat, callDelay) {
   this.servers = ['http://gs1.ctogameservers.tk:3000', 'http://localhost:3000'];
   this.connection = {
@@ -46,7 +72,7 @@ function WebRequestor(repeat, callDelay) {
 
   var self = this;
 
-  this.webRequest = function(page, func, failfunc) {
+  this.webRequest = function(page, func, failfunc, extend) {
     if (self.connection.retry.attempt) {
       $.ajax({
           headers: {
@@ -58,20 +84,27 @@ function WebRequestor(repeat, callDelay) {
           timeout: self.connection.timeout
         })
         .done(func)
-        .fail(() => {
+        .fail((req) => {
           var failure = '';
-          self.connection.error = true;
-          if (self.connection.id >= self.servers.length - 1) {
-            var extra = '';
-            if (self.connection.repeat) extra = 'Retrying in ' + self.connection.retry.delay + ' ms';
-            failure = 'Failed to connect to all servers. ' + extra;
-            self.connection.retry.attempt = false;
-            setTimeout(self.clearError, self.connection.retry.delay);
+          if (req.status === 400) {
+            // The server denied the request
+            failure = (extend) ? req.responseText : req.responseText.split('\n')[0];
           } else {
-            failure = 'Failed to connect to "' + self.connection.url + '/' + page + '"';
-            self.connection.id++;
-            self.connection.url = self.servers[self.connection.id];
+            // The connection failed
+            self.connection.error = true;
+            if (self.connection.id >= self.servers.length - 1) {
+              var extra = '';
+              if (self.connection.repeat) extra = 'Retrying in ' + self.connection.retry.delay + ' ms';
+              failure = 'Failed to connect to all servers. ' + extra;
+              self.connection.retry.attempt = false;
+              setTimeout(self.clearError, self.connection.retry.delay);
+            } else {
+              failure = 'Failed to connect to "' + self.connection.url + '/' + page + '"';
+              self.connection.id++;
+              self.connection.url = self.servers[self.connection.id];
+            }
           }
+
           failfunc(failure);
         }).always(() => {
           self.connection.error = false;

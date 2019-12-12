@@ -1,4 +1,22 @@
-var gameid,$display,$selectors;
+var gameid,$display,$selectors,$inputs,$buttons;
+
+var fields = {
+  select: 'input[name="player-select"]',
+  reg: 'option[name="reg-player-select"]',
+  unreg: 'option[name="unreg-player-select"]'
+};
+
+function getSelected(field) {
+  return $(field + ':checked');
+}
+
+function getField(field) {
+  return $(field);
+}
+
+function getFieldWithClass(field, klass) {
+  return $(field + '.' + klass);
+}
 
 // On load
 $(function() {
@@ -10,45 +28,54 @@ $(function() {
     return;
   }
 
-  // Update fields with the gameid
-  document.title = 'ConnectTacToe - Game Info (' + gameid + ')';
-  $('#gameid-display').html('Game ID: ' + gameid);
-
-  // Attach a listener to the player selector radios
-  $('input[type="radio"]').click(function() {
-    // Get the value of the selector
-    var radioValue = $('input[name="player-select"]:checked').val();
-    // If one is selected, set the play buttons parameters
-    if (radioValue) {
-      let $playButton = $('#play-button');
-      $playButton.prop('href', 'play.html?id=' + gameid + '&player=' + radioValue); // Set the URL
-      $playButton.attr('onclick', null); // Remove the alert
-    }
-  });
-
   // Declare the IO
   // Display
   $display = {
     playerX: $('#playerx-display'),
-    playerO: $('#playero-display')
+    playerO: $('#playero-display'),
+    ready: $('#game-ready-display'),
+    gameid: $('#gameid-display'),
+    response: {
+      register: $('#register-response'),
+      unregister: $('#unregister-reponse'),
+      delete: $('#delete-response')
+    }
   }
 
-  // Input
-  $selectors = {
-    playerSelect: $('input[name="player-select"]'),
-    register: $('option[name="reg-player-select"]'),
-    unregister: $('option[name="unreg-player-select"]'),
-    xEnabled: false,
-    oEnabled: false
-  }
   $inputs = {
     registerId: $('input[name="reg-player-id"]')
   }
 
+  $buttons = {
+    play: $('#play-button-online'),
+    playLocal: $('#play-button-local'),
+    delete: $('#delete-button'),
+    cancelDelete: $('#cancel-delete-button')
+  }
+
+  // Update fields with the gameid
+  document.title = 'ConnectTacToe - Game Info (' + gameid + ')';
+  $display.gameid.html(gameid);
+
+  // Set the local button
+  $buttons.playLocal.prop('href', 'play.html?id=' + gameid); // Set the URL
+  $buttons.playLocal.prop('onclick', null); // Remove the alert
+
+  // Attach a listener to the player selector radios
+  getField(fields.select).click(function() {
+    // Get the value of the selector
+    let radioValue = getSelected(fields.select).val();
+    // If one is selected, set the play buttons parameters
+    if (radioValue) {
+      $buttons.play.prop('href', 'play.html?id=' + gameid + '&player=' + radioValue); // Set the URL
+      $buttons.play.prop('onclick', null); // Remove the alert
+    }
+  });
+
   showLoading(); // Show the user the page is loading
 
   // Request the game info
-  var gameInfoWeb = new WebRequestor(true, 1000);
+  let gameInfoWeb = new WebRequestor(true, 1000);
   gameInfoWeb.webRequest(gameid + '/info', processData, error);
 });
 
@@ -60,99 +87,69 @@ function processData(data) {
   let x = players.X;
   let o = players.O;
 
-  if (x) {
-    $display.playerX.html(x);
-    $('.x', $selectors.playerSelect).val(x);
-    $selectors.xEnabled = true;
-  } else {
-    $display.playerX.html('');
-    $('.x', $selectors.playerSelect).val('X');
-    $selectors.xEnabled = false;
-  }
-  if (x) {
-    $display.playerO.html(o);
-    $('.o', $selectors.playerSelect).val(o);
-    $selectors.oEnabled = true;
-  } else {
-    $display.playerO.html('');
-    $('.o', $selectors.playerSelect).val('O');
-    $selectors.oEnabled = false;
-  }
+  $playerXSelect = getFieldWithClass(fields.select, 'x');
+  $playerOSelect = getFieldWithClass(fields.select, 'o');
+  let hasXVal = (x) ? true : false;
+  let hasOVal = (o) ? true : false;
 
-  $('.x', $selectors.register).prop('disabled', $selectors.xEnabled);
-  $('.o', $selectors.register).prop('disabled', $selectors.oEnabled);
+  $playerXSelect.val(x);
+  $display.playerX.html((x) ? x : '');
 
-  $('.x', $selectors.playerSelect).prop('disabled', !$selectors.xEnabled);
-  $('.o', $selectors.playerSelect).prop('disabled', !$selectors.oEnabled);
+  $playerOSelect.val(o);
+  $display.playerO.html((o) ? o : '');
 
-  let status = (ready) ? 'Ready' : 'Not Ready';
-  $('#gamereadydisplay').html('Game Status: ' + status);
+  getFieldWithClass(fields.reg, 'x').prop('disabled', hasXVal);
+  getFieldWithClass(fields.reg, 'o').prop('disabled', hasOVal);
+
+  $playerXSelect.prop('disabled', !hasXVal);
+  $playerOSelect.prop('disabled', !hasOVal);
+
+  $display.ready.html((ready) ? 'Ready' : 'Not Ready');
 
   hideLoading();
 }
 
-function showLoading() {
-  var loadingTemplate = document.getElementById('loading-template');
-
-  $('.load').toArray().forEach(function(e) {
-    let elem = $(e);
-    let clon = loadingTemplate.content.cloneNode(true);
-
-    if (elem.hasClass('load-large'))
-      $(clon).children().toArray().forEach(function(e1) {
-        $(e1).removeClass('spinner-border-sm');
-      });
-    if (elem.hasClass('load-prepend')) {
-      elem.prepend(clon);
-    } else {
-      elem.append(clon);
-    }
-  });
-}
-
-function hideLoading() {
-  $('.loading-icon').toArray().forEach(function(e) {
-    $(e).remove();
-  });
-}
-
 function registerPlayer() {
-  var uid = $inputs.registerId.val();
-  var player = $selectors.register.val();
+  let uid = $inputs.registerId.val();
+  let player = getSelected(fields.reg).val();
+
+  if (player === "select") {
+    alert('Please select a player');
+    return;
+  }
 
   let webNoRepeat = new WebRequestor(false);
   webNoRepeat.webRequest(gameid + '/register?player=' + player + '&id=' + uid, (data) => {
-    var response = $('#registerResponse');
-    response.removeClass('d-none');
-    response.html(data);
-  }, (err) => {
-    error(err);
-  });
+    $display.response.register.removeClass('d-none');
+    $display.response.register.html(data);
+  }, error);
 }
 
 function unregisterPlayer() {
-  var player = $selectors.unregister.val();
+  let player = getSelected(fields.unreg).val();
+
+  if (player === "select") {
+    alert('Please select a player');
+    return;
+  }
 
   let webNoRepeat = new WebRequestor(false);
   webNoRepeat.webRequest(gameid + '/unregister?player=' + player, (data) => {
-    var $response = $('#unregisterResponse');
-    $response.removeClass('d-none');
-    $response.html(data);
-  }, (err) => {
-    error(err);
-  });
+    $display.response.unregister.removeClass('d-none');
+    $display.response.unregister.html(data);
+  }, error);
 }
 
 function confirmDelete() {
   let webNoRepeat = new WebRequestor(false);
   webNoRepeat.webRequest(gameid + '/delete', (data) => {
     web = null;
-    $('#deleteResponse').html(data);
-    $('#deleteResponse').removeClass('d-none');
-    $('#deleteButton').remove();
-    $('#cancelDeleteButton').html('Close');
-    $('.btn').toArray().forEach(function(e) {
-      $(e).prop('disabled', true);
-    });
-  });
+    $display.response.delete.html(data);
+    $display.response.delete.removeClass('d-none');
+    $buttons.delete.remove();
+    $buttons.cancelDelete.html('Close');
+    // $('.btn').toArray().forEach(function(e) {
+    //   $(e).prop('disabled', true);
+    // });
+  }, error);
 }
